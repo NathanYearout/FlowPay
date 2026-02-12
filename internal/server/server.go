@@ -10,13 +10,15 @@ import (
 	_ "github.com/joho/godotenv/autoload"
 
 	"flowpay/internal/database"
+	"flowpay/internal/ledger"
 	"flowpay/internal/queue"
 )
 
 type Server struct {
-	port int
-	db   database.Service
-	queue *queue.KafkaClient
+	port   int
+	db     database.Service
+	ledger *ledger.Ledger
+	queue  *queue.KafkaClient
 }
 
 func NewServer(q *queue.KafkaClient) *http.Server {
@@ -25,10 +27,13 @@ func NewServer(q *queue.KafkaClient) *http.Server {
 		port = 8080
 	}
 
+	db := database.New()
+
 	s := &Server{
-		port:  port,
-		db:    database.New(),
-		queue: q,
+		port:   port,
+		db:     db,
+		ledger: ledger.New(db.Pool()),
+		queue:  q,
 	}
 
 	server := &http.Server{
