@@ -3,6 +3,7 @@ package server
 import (
 	"encoding/json"
 	"errors"
+	"log"
 	"net/http"
 
 	"github.com/gin-contrib/cors"
@@ -117,6 +118,18 @@ func (s *Server) createTransactionHandler(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create transaction"})
 		}
 		return
+	}
+
+	// Publish event after Postgres commit, Kafka isn't source of truth
+	event := map[string]interface{}{
+		"event":          "payment.completed",
+		"transaction_id": txn.ID,
+		"type":           txn.Type,
+		"status":         txn.Status,
+		"entries":        entries,
+	}
+	if err := s.queue.Publish("payments", txn.IdempotencyKey, event); err != nil {
+		log.Printf("failed to publish event: %v", err)
 	}
 
 	c.JSON(http.StatusCreated, gin.H{

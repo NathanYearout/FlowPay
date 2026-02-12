@@ -39,7 +39,15 @@ func main() {
 	if err != nil {
 		panic(fmt.Sprintf("failed to create Kafka client: %s", err))
 	}
-	defer kafkaClient.Producer.Close()
+	defer kafkaClient.Close()
+
+	// Logs payment events as they arrive
+	err = kafkaClient.Subscribe([]string{"payments"}, func(key, value []byte) {
+		log.Printf("[kafka] event received: key=%s payload=%s", string(key), string(value))
+	})
+	if err != nil {
+		panic(fmt.Sprintf("failed to subscribe: %s", err))
+	}
 
 	srv := server.NewServer(kafkaClient)
 
