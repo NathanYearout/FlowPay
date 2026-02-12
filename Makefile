@@ -1,6 +1,3 @@
-# Simple Makefile for a Go project
-
-# Build the application
 all: build test
 
 build:
@@ -10,7 +7,7 @@ build:
 	@go build -o main cmd/api/main.go
 
 # Run the application
-run:
+run: docker-run
 	@go run cmd/api/main.go
 # Create DB container
 docker-run:
