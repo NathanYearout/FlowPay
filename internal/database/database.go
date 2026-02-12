@@ -3,15 +3,22 @@ package database
 import (
 	"context"
 	"database/sql"
+	"embed"
 	"fmt"
 	"log"
 	"os"
 	"strconv"
 	"time"
 
+	"github.com/golang-migrate/migrate/v4"
+	_ "github.com/golang-migrate/migrate/v4/database/postgres"
+	"github.com/golang-migrate/migrate/v4/source/iofs"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	_ "github.com/joho/godotenv/autoload"
 )
+
+//go:embed migrations/*.sql
+var migrationsFS embed.FS
 
 // Service represents a service that interacts with a database.
 type Service interface {
@@ -48,10 +55,31 @@ func New() Service {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	runMigrations(connStr)
+
 	dbInstance = &service{
 		db: db,
 	}
 	return dbInstance
+}
+
+func runMigrations(connStr string) {
+	source, err := iofs.New(migrationsFS, "migrations")
+	if err != nil {
+		log.Fatalf("failed to read migrations: %v", err)
+	}
+
+	m, err := migrate.NewWithSourceInstance("iofs", source, connStr)
+	if err != nil {
+		log.Fatalf("failed to create migrate instance: %v", err)
+	}
+
+	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
+		log.Fatalf("migration failed: %v", err)
+	}
+
+	log.Println("migrations applied successfully")
 }
 
 // Health checks the health of the database connection by pinging the database.
