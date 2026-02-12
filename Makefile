@@ -6,10 +6,9 @@ build:
 	
 	@go build -o main cmd/api/main.go
 
-# Run the application
 run: docker-run
 	@go run cmd/api/main.go
-# Create DB container
+
 docker-run:
 	@if docker compose up -d --build 2>/dev/null; then \
 		: ; \
@@ -18,7 +17,6 @@ docker-run:
 		docker-compose up -d --build; \
 	fi
 
-# Shutdown DB container
 docker-down:
 	@if docker compose down 2>/dev/null; then \
 		: ; \
@@ -27,21 +25,19 @@ docker-down:
 		docker-compose down; \
 	fi
 
-# Test the application
 test:
 	@echo "Testing..."
 	@go test ./... -v
+
 # Integrations Tests for the application
 itest:
 	@echo "Running integration tests..."
 	@go test ./internal/database -v
 
-# Clean the binary
 clean:
 	@echo "Cleaning..."
 	@rm -f main
 
-# Live Reload
 watch:
 	@if command -v air > /dev/null; then \
             air; \
@@ -58,4 +54,8 @@ watch:
             fi; \
         fi
 
-.PHONY: all build run test clean watch docker-run docker-down itest
+# Create a new migration file pair (usage: make migrate-create name=create_foo)
+migrate-create:
+	@migrate create -ext sql -dir internal/database/migrations -seq $(name)
+
+.PHONY: all build run test clean watch docker-run docker-down itest migrate-create
