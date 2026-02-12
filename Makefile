@@ -58,4 +58,7 @@ watch:
 migrate-create:
 	@migrate create -ext sql -dir internal/database/migrations -seq $(name)
 
-.PHONY: all build run test clean watch docker-run docker-down itest migrate-create
+sqlc:
+	@sqlc generate
+
+.PHONY: all build run test clean watch docker-run docker-down itest migrate-create sqlc
